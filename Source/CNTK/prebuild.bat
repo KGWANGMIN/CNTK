@@ -98,14 +98,25 @@ if not %l_build_target% == CPU-only (
     )
 )
 
+:: MPI info
+set MPI_NAME=Unknown
+set MPI_VERSION=Unknown
 where -q mpiexec
 if not errorlevel 1 (
     call mpiexec -help > NUL 2>&1
     if not errorlevel 1 (
-        echo #define _MPI_NAME_ "msmpi" >> buildinfo.h$$
-        for /f "tokens=6 delims=] " %%i in ('mpiexec -? ^| findstr Version') do echo #define _MPI_VERSION_ "%%i" >> buildinfo.h$$
+        for /f "tokens=1 delims= " %%i in ('mpiexec -? ^| findstr Version') do set MPI_NAME="%%i"
+        if "%MPI_NAME%" == "Microsoft" (
+            set MPI_NAME="Microsoft MPI"
+            for /f "tokens=6 delims=] " %%i in ('mpiexec -? ^| findstr Version') do set MPI_VERSION="%%i"
+        ) else if "%MPI_NAME%" == "Intel" (
+            set MPI_NAME="Intel MPI"
+            for /f "tokens=8 delims= " %%i in ('mpiexec -? ^| findstr Version') do set MPI_VERSION="%%i"
+        )
     )
 )
+echo #define _MPI_NAME_ "%MPI_NAME%" >> buildinfo.h$$
+echo #define _MPI_VERSION_ "%MPI_VERSION%" >> buildinfo.h$$
 
 echo #endif >> buildinfo.h$$
 
